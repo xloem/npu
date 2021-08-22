@@ -1,0 +1,7 @@
+requests>=2
+numpy>=1.18
+dill
+bson
+tqdm
+requests_toolbelt
+cryptography>=3.4.7
