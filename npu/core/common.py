@@ -7,8 +7,11 @@ import base64
 from sys import exit
 import requests
 from bson import ObjectId
-from cryptography.hazmat.primitives.asymmetric import padding
-from cryptography.hazmat.primitives import serialization, hashes
+from Crypto.Cipher import PKCS1_OAEP
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA
+#from cryptography.hazmat.primitives.asymmetric import padding
+#from cryptography.hazmat.primitives import serialization, hashes
 from tqdm import tqdm
 from requests_toolbelt import MultipartEncoder, MultipartEncoderMonitor
 from datetime import datetime
@@ -31,7 +34,8 @@ _deployed = False
 utcnow = datetime.utcnow
 
 with open(os.path.join(os.path.dirname(__file__), "pub_cred_key.pub"), "rb") as key_file:
-    pub_key_encryption = serialization.load_pem_public_key(key_file.read())
+    #pub_key_encryption = serialization.load_pem_public_key(key_file.read())
+    pub_key_encryption = PKCS1_OAEP.new(RSA.importKey(key_file.read()), SHA256)
 
 
 # from SO
@@ -179,10 +183,13 @@ def check_data(data, name=""):
         if isinstance(data, hub.Dataset):
             encrypted_token = base64.b64encode(
                 pub_key_encryption.encrypt(
-                    json.dumps(data.token).encode(),
-                    padding.OAEP(
-                        mgf=padding.MGF1(
-                            algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None))).decode()
+                    json.dumps(data.token).encode()
+                )).decode()
+                #pub_key_encryption.encrypt(
+                #    json.dumps(data.token).encode(),
+                #    padding.OAEP(
+                #        mgf=padding.MGF1(
+                #            algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None))).decode()
             hub_meta = {"url": data.url, "schema": data.schema, "token": encrypted_token, **hub_meta}
             hub_meta = base64.b64encode(dill.dumps(hub_meta)).decode()
             return HubDataset(hub_meta)
